@@ -1,0 +1,13 @@
+# Dépendances (régénérées par `composer install`)
+/vendor/
+
+# Secrets locaux — jamais committés (cf. .env.example)
+.env
+
+# Caches PHPUnit
+.phpunit.result.cache
+/.phpunit.cache/
+
+# Divers OS / éditeurs
+.DS_Store
+*.log
