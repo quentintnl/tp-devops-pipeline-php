@@ -293,8 +293,9 @@ Dans NPM, créez un **Proxy Host** :
 Vous aurez besoin d'un **deuxième** fichier compose, distinct de celui de dev. Il **ressemble** au
 compose de dev, avec **une différence clé** (à vous de l'écrire — pas de copier-coller fourni) :
 
-- ✅ `web`/`app` n'ont **plus** de `build:` mais référencent **l'image publiée sur GHCR**
-  (`image: ghcr.io/<user>/<repo>:<tag>`) — celle que votre CI a poussée.
+- ✅ votre service `app` n'a **plus** de `build:` mais référence **l'image publiée sur GHCR**
+  (`image: ghcr.io/<user>/<repo>:<tag>`) — celle que votre CI a poussée. (`web` reste sur l'image
+  `nginx` officielle + votre config ; seul `app` change de mode.)
 - ✅ `db` et `cache` restent **identiques** : mêmes images **pinnées**, mêmes réseaux, **toujours
   sans port exposé**, avec un **volume nommé persistant** pour `db`.
 - ✅ **Même topologie 2 réseaux** `frontend`/`backend` qu'en dev (section 4).
