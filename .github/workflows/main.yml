@@ -24,3 +24,11 @@ jobs:
       - name: Build application
         run: |
           composer install
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-php-app:latest .
+
+      - name: Run tests
+        run: |
+          composer test
