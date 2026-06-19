@@ -1,0 +1,33 @@
+# Contexte de build minimal : on ne copie que ce qui sert à l'image app.
+# Garde nécessaires au build : composer.json, composer.lock, src/, public/.
+
+.git
+.gitignore
+.github
+
+# vendor/ est régénéré dans le stage `deps` (composer install) — jamais copié du host.
+vendor/
+
+# Secrets locaux et exemples — jamais dans l'image.
+.env
+.env.*
+!.env.example
+
+# Tests et outillage de test (pas nécessaires au runtime).
+tests/
+phpunit.xml
+.phpunit.cache/
+.phpunit.result.cache
+
+# Docs et matériel de run.
+docs/
+runs/
+*.md
+
+# Compose / config qui ne font pas partie de l'image app.
+docker-compose*.yml
+docker/nginx/
+
+# Divers OS / éditeurs.
+.DS_Store
+*.log

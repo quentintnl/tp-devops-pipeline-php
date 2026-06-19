@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Compose de DÉVELOPPEMENT — `docker compose up --build`.
+# Topologie 2 réseaux (spec §6.2) :
+#   - frontend : web ↔ app  (seul réseau tourné vers l'extérieur, via le port de web)
+#   - backend  : app ↔ db, app ↔ cache  (isolé : ni web ni l'hôte n'y accèdent)
+# Invariants d'isolation (vérifiés par le QA) :
+#   - db/cache NE sont PAS sur frontend → injoignables depuis web.
+#   - db/cache n'ont AUCUN `ports:` → injoignables depuis l'hôte (pas même pour debug).
+#   - app = seul service à cheval sur les deux réseaux (pont unique).
+# Pas de `version:` (obsolète sur Compose v2).
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  web:
+    image: nginx:1.27-alpine
+    env_file: .env
+    ports:
+      - "${APP_PORT}:80"        # seul port publié sur l'hôte (NPM forward dessus en prod)
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - frontend
+    depends_on:
+      app:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  app:
+    build: .
+    env_file: .env
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  db:
+    image: mariadb:11.4        # pinné — JAMAIS latest (lesson vault : upgrade silencieux)
+    env_file: .env
+    environment:
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend                # backend SEULEMENT — pas de port hôte
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  cache:
+    image: redis:7-alpine
+    networks:
+      - backend                # backend SEULEMENT — pas de port hôte
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  db_data:
